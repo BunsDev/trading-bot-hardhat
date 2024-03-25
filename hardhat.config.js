@@ -111,7 +111,7 @@ module.exports = {
     },
     contractSizer: {
         runOnCompile: false,
-        only: ["NftArticles", "NftArticlesNatSpec"],
+        only: ["Dobo", "GetPriceFeedDataV8"],
     },
     namedAccounts: {
         deployer: {
