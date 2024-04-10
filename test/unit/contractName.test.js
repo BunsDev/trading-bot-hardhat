@@ -36,77 +36,77 @@ const { developmentChains } = require("../../helper-hardhat-config")
         describe("checking price functions", function () {
             it("should return the price of AAVE in wei", async function () {
                 let price = await DoboContractOwner.getPriceInWei(AAVE, 1);
-                console.log("ETH Price: ", price.toString());
+                console.log("AAVE Price: ", price.toString());
                 expect(Number(price)).to.be.above(0);
             });
             it("should return the price of APE in wei", async function () {
                 let price = await DoboContractOwner.getPriceInWei(APE, 1);
-                console.log("ETH Price: ", price.toString());
+                console.log("APE Price: ", price.toString());
                 expect(Number(price)).to.be.above(0);
             });
             it("should return the price of ARB in wei", async function () {
                 let price = await DoboContractOwner.getPriceInWei(ARB, 1);
-                console.log("ETH Price: ", price.toString());
+                console.log("ARB Price: ", price.toString());
                 expect(Number(price)).to.be.above(0);
             });
             it("should return the price of AVAX in wei", async function () {
                 let price = await DoboContractOwner.getPriceInWei(AVAX, 1);
-                console.log("ETH Price: ", price.toString());
+                console.log("AVAX Price: ", price.toString());
                 expect(Number(price)).to.be.above(0);
             });
             it("should return the price of BNB in wei", async function () {
                 let price = await DoboContractOwner.getPriceInWei(BNB, 1);
-                console.log("ETH Price: ", price.toString());
+                console.log("BNB Price: ", price.toString());
                 expect(Number(price)).to.be.above(0);
             });
             it("should return the price of WETH in wei", async function () {
                 let price = await DoboContractOwner.getPriceInWei(WETH, 1);
-                console.log("ETH Price: ", price.toString());
+                console.log("WETH Price: ", price.toString());
                 expect(Number(price)).to.be.above(0);
             });
             it("should return the price of LINK in wei", async function () {
                 let price = await DoboContractOwner.getPriceInWei(LINK, 1);
-                console.log("ETH Price: ", price.toString());
+                console.log("LINK Price: ", price.toString());
                 expect(Number(price)).to.be.above(0);
             });
             it("should return the price of MATIC in wei", async function () {
                 let price = await DoboContractOwner.getPriceInWei(MATIC, 1);
-                console.log("ETH Price: ", price.toString());
+                console.log("MATIC Price: ", price.toString());
                 expect(Number(price)).to.be.above(0);
             });
             it("should return the price of MKR in wei", async function () {
                 let price = await DoboContractOwner.getPriceInWei(MKR, 1);
-                console.log("ETH Price: ", price.toString());
+                console.log("MKR Price: ", price.toString());
                 expect(Number(price)).to.be.above(0);
             });
             it("should return the price of SOL in wei", async function () {
                 let price = await DoboContractOwner.getPriceInWei(SOL, 1);
-                console.log("ETH Price: ", price.toString());
+                console.log("SOL Price: ", price.toString());
                 expect(Number(price)).to.be.above(0);
             });
             it("should return the price of DAI in wei", async function () {
                 let price = await DoboContractOwner.getPriceInWei(DAI, 1);
-                console.log("ETH Price: ", price.toString());
+                console.log("DAI Price: ", price.toString());
                 expect(Number(price)).to.be.above(0);
             });
             it("should return the price of USDT in wei", async function () {
                 let price = await DoboContractOwner.getPriceInWei(USDT, 1);
-                console.log("ETH Price: ", price.toString());
+                console.log("USDT Price: ", price.toString());
                 expect(Number(price)).to.be.above(0);
             });
             it("should return the price of USDC in wei", async function () {
                 let price = await DoboContractOwner.getPriceInWei(USDC, 1);
-                console.log("ETH Price: ", price.toString());
+                console.log("USDC Price: ", price.toString());
                 expect(Number(price)).to.be.above(0);
             });
             it("should return the price of FTM in wei", async function () {
                 let price = await DoboContractOwner.getPriceInWei(FTM, 1);
-                console.log("ETH Price: ", price.toString());
+                console.log("FTM Price: ", price.toString());
                 expect(Number(price)).to.be.above(0);
             });
             it("should return the price of FIL in wei", async function () {
                 let price = await DoboContractOwner.getPriceInWei(FIL, 1);
-                console.log("ETH Price: ", price.toString());
+                console.log("FIL Price: ", price.toString());
                 expect(Number(price)).to.be.above(0);
             });
         });
