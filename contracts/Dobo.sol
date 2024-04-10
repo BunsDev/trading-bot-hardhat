@@ -13,22 +13,28 @@ import "./GetPriceFeedData.sol";
 //modify and cancel the order
 
 contract Dobo is Ownable {
-
     //address botAddress;
     IUniswapV2Router02[] public V2DexRouters;
     //IERC20[] public Aprroved2DexTokens;
     //address[] public approvedPriceFeedContracts;
     mapping(address => bool) public approvedDexTokens; //this might be a better way to do this
     mapping(address => bool) public approvedPriceFeedContracts; //this might be a better way to do this
-    mapping(address => address) public TokenToPriceFeed;
+    mapping(address => PriceFeedDetails) public tokenToPriceFeed;
+
+    using GetPriceFeedDataV8 for uint256;
+
+    struct PriceFeedDetails {
+        address priceFeedContract;
+        uint8 decimals;
+    }
 
     event OrderPlaced(address indexed user, uint256 amount, uint256 price);
     event OrderExecuted(address indexed user, uint256 amount, uint256 price);
 
-
     struct Order {
+        address originator; //is this the right place?
         address originTokenAddress; //stable
-        address targetTokenAddress; //investment    
+        address targetTokenAddress; //investment
         uint256 amount; //amount of stable token
         uint256 PurchasePrice; //price of TargetToken in stable token -- expected amount
         uint256 SellPrice; //price of TargetToken in stable token
@@ -45,21 +51,31 @@ contract Dobo is Ownable {
     mapping(uint256 => uint256[]) private sellPriceToOrderID; //maybe to order ID
     mapping(uint256 => uint256[]) private purchasePriceToOrderID; //maybe to order ID
     mapping(uint256 => Order) private IDToOrder;
-    mapping(address => uint256[]) private userToIDs; //count be be .length? 
+    mapping(address => uint256[]) private userToIDs; //count be be .length? or offchain?
     //mapping(address => uint256[]) private userToActiveOrderlist; //how does active and diactive orders work?
     mapping(uint256 => bool) public activeOrders;
+    mapping(address => uint256) public userToOrderID; //how to track the number of orders per user?
 
     uint256 public orderCounter;
 
-    constructor(IUniswapV2Router02[] memory _approvedDexRouters, address[] memory _approved2DexTokens, address[] memory _approvedPriceFeedContracts) {
+    constructor(
+        IUniswapV2Router02[] memory _approvedDexRouters, 
+        address[] memory _approved2DexTokens, 
+        address[] memory _approvedPriceFeedContracts, 
+        uint8[] memory _decimals
+    ) {
+        require(_approved2DexTokens.length == _decimals.length, "Tokens and decimals array length must match");
+        require(_approved2DexTokens.length == _approvedPriceFeedContracts.length, "Tokens and price feed contracts array length must match");
+
         V2DexRouters = _approvedDexRouters;
-        //Aprroved2DexTokens = _Approved2DexTokens; //there might be a better way to do this using the uniswap contracts -- unless using chainlink for price data?
-        //approvedPriceFeedContracts = _approvedPriceFeedContracts;
+
         for (uint i = 0; i < _approved2DexTokens.length; i++) {
             approvedDexTokens[_approved2DexTokens[i]] = true;
-        }
-        for (uint i = 0; i < _approvedPriceFeedContracts.length; i++) {
             approvedPriceFeedContracts[_approvedPriceFeedContracts[i]] = true;
+            tokenToPriceFeed[_approved2DexTokens[i]] = PriceFeedDetails({
+                priceFeedContract: _approvedPriceFeedContracts[i],
+                decimals: _decimals[i]
+            });
         }
     }
 
