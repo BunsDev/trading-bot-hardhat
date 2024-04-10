@@ -79,6 +79,11 @@ contract Dobo is Ownable {
         }
     }
 
+    function getPriceInWei(address _tokenAddress, uint256 _amount) public view returns (uint256) {
+        PriceFeedDetails storage feedDetails = tokenToPriceFeed[_tokenAddress];
+        return _amount.valueToWei(feedDetails.priceFeedContract, feedDetails.decimals);
+    }
+
     function placeOrder(address _originTokenAddress, address _targetTokenAddress, uint256 _amount, uint256 _sellPrice, uint256 _purchasePrice, uint256 _slippage, uint256 _expirationDate) public {
         //is the token a valid trading pair within the uniswap contract? check to see if Dai to tokenAddress is a valid swap
         require(approvedDexTokens[_originTokenAddress] == true && approvedDexTokens[_targetTokenAddress] == true, "Token is not approved for trading");
