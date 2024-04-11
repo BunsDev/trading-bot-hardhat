@@ -52,7 +52,7 @@ library GetPriceFeedDataV8 {
     ) internal view returns (uint256 tokenAmountInComparitiveValue) {
         uint256 price = getPrice(_contractAddress) * 1e10;
         ///@notice overFlow protection -- EVM will error if the calcuated result is greater then unit256
-        uint256 checkedAmount = price * (10**_decimalPlace) * _tokenAmount;
+        uint256 checkedAmount = price * (10 ** _decimalPlace) * _tokenAmount;
         unchecked {
             tokenAmountInComparitiveValue = checkedAmount / 1e18;
         }
@@ -80,11 +80,11 @@ library GetPriceFeedDataV8 {
         uint8 _decimalPlace
     ) internal view returns (uint256 valueInWei) {
         ///@notice overFlow protection -- EVM will error if the calcuated result is greater then `type(unit256).max`
-        uint256 checkedAmount = _comparitiveAmount * 1e18 * (10**_decimalPlace);
+        uint256 checkedAmount = _comparitiveAmount * 1e18 * (10 ** _decimalPlace);
         unchecked {
             uint256 price = getPrice(_contractAddress) * 1e10;
             ///@notice division by zero -- EVM will error in unchecked for divion by zero if `getPrice` returns `0`
-            valueInWei = checkedAmount / ((price * (10**_decimalPlace)) / 1e18);
+            valueInWei = checkedAmount / ((price * (10 ** _decimalPlace)) / 1e18);
         }
     }
 }
