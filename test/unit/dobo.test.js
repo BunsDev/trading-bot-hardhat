@@ -110,5 +110,15 @@ const { developmentChains } = require("../../helper-hardhat-config")
                 expect(Number(price)).to.be.above(0);
             });
         });
-})
-    
+        describe("checking price calculations", function () {
+            it("should return the price of AAVE in USD", async function () {
+                let price = await DoboContractOwner.getPriceInWei(AAVE, BigInt("1000000000000000000")); 
+                console.log("AAVE Caculated Price: ", price.toString());
+                console.log("AAVE Caculated Price: ", 1 * Number(price[1]) /(10 ** 8));
+                 //expect(Number(price)).to.be.above(0);
+            });
+        });//7993449913908050.470837157117336916
+    }) //12510242896.000000000000000000
+    //125.10242896 //125.95122896
+
+    //118.835486410000000000
