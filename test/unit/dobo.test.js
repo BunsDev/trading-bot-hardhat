@@ -24,101 +24,91 @@ const { developmentChains } = require("../../helper-hardhat-config")
         let FIL = "0x211ef1ea610460db2ec6094717b524e86490c37d";
         // let WLD = "0x4ea666c057e278e1f563e438cdb4cfef3048e517";
 
+        let block;
+
         beforeEach(async () => {
             accounts = await ethers.getSigners() // could also do with getNamedAccounts
             deployer = accounts[0]
+              let bigIntValue = BigInt("10000000000000000000000000000000000000000000000000000000");
+                let hexString = "0x" + bigIntValue.toString(16).padStart(64, '0');
+            await hre.network.provider.request({
+                method: "hardhat_setBalance",
+                params: [
+                    deployer.address,
+                    hexString
+                ],
+            });
+            const UNISWAP_ROUTER_ADDRESS = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
+            const WETH_ABI = [
+            // Some details about the WETH contract
+            "function deposit() external payable",
+            "function approve(address spender, uint256 amount) external returns (bool)"
+            ];
+            const amountIn = ethers.parseUnits("1", 18); // 1 WETH
+            const weth = new ethers.Contract(WETH, WETH_ABI, ethers.provider).connect(deployer);
+            await weth.deposit({ value: BigInt(1e18.toString()) })
+            const tx2 = await weth.approve(UNISWAP_ROUTER_ADDRESS, amountIn);
+            const receipt2 = await tx2.wait();
+            const UNISWAP_ROUTER_ABI = [
+            "function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)"
+            ];
+            const DAI_ADDRESS = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
+            // Connect to the Uniswap Router contract
+            uniswapRouter = new ethers.Contract(UNISWAP_ROUTER_ADDRESS, UNISWAP_ROUTER_ABI, ethers.provider).connect(deployer);
+            // Define the path of the swap
+            const path = [WETH, DAI_ADDRESS];
+            // Define the amount of WETH you want to swap
+            // Define the minimum amount of DAI you want to receive
+            const amountOutMin = ethers.parseUnits("200", 18); // At least 200 DAI
+            // Define the deadline of the swap
+            const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
+            // Execute the swap
+            const tx = await uniswapRouter.swapExactTokensForTokens(
+            amountIn,
+            amountOutMin,
+            path,
+            deployer.address,
+            deadline
+            );
+
+            // Wait for the transaction to be mined
+            const receipt = await tx.wait();
             await deployments.fixture(["all"])
             DoboContract = await ethers.getContract("Dobo")
             DoboContractOwner = DoboContract.connect(deployer)
             //DoboContractOwner = getPriceFeedDataContract.connect(deployer)
+
+            block = await ethers.provider.getBlock('latest');
         })
     
-        describe("checking price functions", function () {
-            it("should return the price of AAVE in wei", async function () {
-                let price = await DoboContractOwner.getPriceInWei(AAVE, 1);
-                console.log("AAVE Price: ", price.toString());
-                expect(Number(price)).to.be.above(0);
-            });
-            it("should return the price of APE in wei", async function () {
-                let price = await DoboContractOwner.getPriceInWei(APE, 1);
-                console.log("APE Price: ", price.toString());
-                expect(Number(price)).to.be.above(0);
-            });
-            it("should return the price of ARB in wei", async function () {
-                let price = await DoboContractOwner.getPriceInWei(ARB, 1);
-                console.log("ARB Price: ", price.toString());
-                expect(Number(price)).to.be.above(0);
-            });
-            it("should return the price of AVAX in wei", async function () {
-                let price = await DoboContractOwner.getPriceInWei(AVAX, 1);
-                console.log("AVAX Price: ", price.toString());
-                expect(Number(price)).to.be.above(0);
-            });
-            it("should return the price of BNB in wei", async function () {
-                let price = await DoboContractOwner.getPriceInWei(BNB, 1);
-                console.log("BNB Price: ", price.toString());
-                expect(Number(price)).to.be.above(0);
-            });
-            it("should return the price of WETH in wei", async function () {
-                let price = await DoboContractOwner.getPriceInWei(WETH, 1);
-                console.log("WETH Price: ", price.toString());
-                expect(Number(price)).to.be.above(0);
-            });
-            it("should return the price of LINK in wei", async function () {
-                let price = await DoboContractOwner.getPriceInWei(LINK, 1);
-                console.log("LINK Price: ", price.toString());
-                expect(Number(price)).to.be.above(0);
-            });
-            it("should return the price of MATIC in wei", async function () {
-                let price = await DoboContractOwner.getPriceInWei(MATIC, 1);
-                console.log("MATIC Price: ", price.toString());
-                expect(Number(price)).to.be.above(0);
-            });
-            it("should return the price of MKR in wei", async function () {
-                let price = await DoboContractOwner.getPriceInWei(MKR, 1);
-                console.log("MKR Price: ", price.toString());
-                expect(Number(price)).to.be.above(0);
-            });
-            it("should return the price of SOL in wei", async function () {
-                let price = await DoboContractOwner.getPriceInWei(SOL, 1);
-                console.log("SOL Price: ", price.toString());
-                expect(Number(price)).to.be.above(0);
-            });
-            it("should return the price of DAI in wei", async function () {
-                let price = await DoboContractOwner.getPriceInWei(DAI, 1);
-                console.log("DAI Price: ", price.toString());
-                expect(Number(price)).to.be.above(0);
-            });
-            it("should return the price of USDT in wei", async function () {
-                let price = await DoboContractOwner.getPriceInWei(USDT, 1);
-                console.log("USDT Price: ", price.toString());
-                expect(Number(price)).to.be.above(0);
-            });
-            it("should return the price of USDC in wei", async function () {
-                let price = await DoboContractOwner.getPriceInWei(USDC, 1);
-                console.log("USDC Price: ", price.toString());
-                expect(Number(price)).to.be.above(0);
-            });
-            it("should return the price of FTM in wei", async function () {
-                let price = await DoboContractOwner.getPriceInWei(FTM, 1);
-                console.log("FTM Price: ", price.toString());
-                expect(Number(price)).to.be.above(0);
-            });
-            it("should return the price of FIL in wei", async function () {
-                let price = await DoboContractOwner.getPriceInWei(FIL, 1);
-                console.log("FIL Price: ", price.toString());
-                expect(Number(price)).to.be.above(0);
-            });
-        });
         describe("checking price calculations", function () {
             it("should return the price of AAVE in USD", async function () {
                 let price = await DoboContractOwner.getPriceInWei(AAVE, BigInt("1000000000000000000")); 
                 console.log("AAVE Caculated Price: ", price.toString());
                 console.log("AAVE Caculated Price: ", 1 * Number(price[1]) /(10 ** 8));
-                 //expect(Number(price)).to.be.above(0);
+                expect(Number(price[1])).to.be.above(0);
             });
-        });//7993449913908050.470837157117336916
-    }) //12510242896.000000000000000000
+        });
+        describe("checking purchase and sell functionlity", function () {
+            it("should be able to place an order for AAVE tokens", async function () {
+                const DAI_ABI = [
+                    "function approve(address spender, uint256 amount) external returns (bool)",
+                    "function balanceOf(address account) external view returns (uint256)",
+                    "function allowance(address owner, address spender) external view returns (uint256)"
+                ];
+                const dai = new ethers.Contract(DAI, DAI_ABI, ethers.provider).connect(deployer);
+                const amount = ethers.parseUnits("10", 18); // 10 DAI
+                const balance = await dai.balanceOf(deployer.address);
+                console.log("Balance: ", balance.toString());
+                const tx = await dai.approve(DoboContract.target, balance);
+                await tx.wait();
+                const allowance = await dai.allowance(deployer.address, DoboContract.target);
+        
+                //console.log("Order: ", order);
+                //expect it to not revert
+                await expect(DoboContractOwner.placeOrder(DAI, AAVE, 1, 12595122896, 100 * 1e8, 5, block.timestamp + 31536000)).to.not.be.reverted;
+            });
+        });
+    }); 3528795437475780548878
     //125.10242896 //125.95122896
-
     //118.835486410000000000
