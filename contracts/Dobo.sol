@@ -21,7 +21,7 @@ contract Dobo is Ownable {
     mapping(address => bool) public approvedPriceFeedContracts; //this might be a better way to do this
     mapping(address => PriceFeedDetails) public tokenToPriceFeed;
 
-    using GetPriceFeedDataV8 for uint256;
+    using GetPriceFeedDataV8 for address;
 
     struct PriceFeedDetails {
         address priceFeedContract;
@@ -79,9 +79,12 @@ contract Dobo is Ownable {
         }
     }
 
-    function getPriceInWei(address _tokenAddress, uint256 _amount) public view returns (uint256) {
+    function getPriceInWei(address _tokenAddress, uint256 _amount) public view returns (uint256, uint256, uint256) {
         PriceFeedDetails storage feedDetails = tokenToPriceFeed[_tokenAddress];
-        return _amount.valueToWei(feedDetails.priceFeedContract, feedDetails.decimals);
+        uint256 tokenToWei = GetPriceFeedDataV8.valueToWei(_amount, feedDetails.priceFeedContract, feedDetails.decimals);
+        uint256 price = GetPriceFeedDataV8.getPrice(feedDetails.priceFeedContract);
+        uint256 weiToToken = GetPriceFeedDataV8.tokenToValue(_amount, feedDetails.priceFeedContract, feedDetails.decimals);
+        return (price, weiToToken, tokenToWei);
     }
 
     function placeOrder(address _originTokenAddress, address _targetTokenAddress, uint256 _amount, uint256 _sellPrice, uint256 _purchasePrice, uint256 _slippage, uint256 _expirationDate) public {
@@ -93,8 +96,8 @@ contract Dobo is Ownable {
         //pre-approved -- what about when it goes to spend?
         require(IERC20(_originTokenAddress).allowance(msg.sender, address(this)) >= _amount, "Insufficient allowance"); //preferably approved and/or stake in LP prior to execution
 
-        Order memory newOrder = Order(_originTokenAddress, _targetTokenAddress, _amount, _purchasePrice, _sellPrice, _slippage, _expirationDate);
-      
+        Order memory newOrder = Order(msg.sender, _originTokenAddress, _targetTokenAddress, _amount, _purchasePrice, _sellPrice, _slippage, _expirationDate);
+
         orderCounter++;
         IDToOrder[orderCounter] = newOrder;
         purchasePriceToOrderID[orderCounter].push(orderCounter);
@@ -107,15 +110,13 @@ contract Dobo is Ownable {
     function purchaseOrder(uint256 _orderID) public {
         //require(IDToOrder[_orderID].active == true, "Order is not active"); //double check tracking optimization and data structure
         require(IDToOrder[_orderID].expirationDate > block.timestamp, "Order has expired");
-        //require(IERC20(IDToOrder[_orderID].OriginTokenAddress).balanceOf(msg.sender) >= IDToOrder[_orderID].amount, "Insufficient balance");
-        //require(IERC20(IDToOrder[_orderID].OriginTokenAddress).allowance(msg.sender, address(this)) >= IDToOrder[_orderID].amount, "Insufficient allowance");
-        require(GetPriceFeedDataV8.getPrice(IDToOrder[_orderID].targetTokenAddress) <= IDToOrder[_orderID].PurchasePrice, "Price is too high");
+        require(IDToOrder[_orderID].targetTokenAddress.getPrice() <= IDToOrder[_orderID].PurchasePrice, "Price is too high");
 
         require(IERC20(IDToOrder[_orderID].originTokenAddress).transferFrom(msg.sender, address(this), IDToOrder[_orderID].amount), "Transfer failed");
         //IDToOrder[_orderID].active = false;
-
-        bool swapSuccessful = trySwap(_orderID, IDToOrder[_orderID].amount, IDToOrder[_orderID].PurchasePrice);
-    //option to stake or send? -- what if the swap fails?
+        //double check decmal place
+        bool swapSuccessful = trySwap(_orderID, IDToOrder[_orderID].amount, IDToOrder[_orderID].PurchasePrice, tokenToPriceFeed[IDToOrder[_orderID].targetTokenAddress].decimals);
+        //option to stake or send? -- what if the swap fails?
         if (!swapSuccessful) {
             revert("All DEX swaps failed");
             // Optionally, handle the case where all swaps fail (e.g., refunding the user).
@@ -125,30 +126,30 @@ contract Dobo is Ownable {
     function sellOrder(uint256 _orderID) public {
         //require(IDToOrder[_orderID].active == true, "Order is not active"); //double check tracking optimization and data structure
         require(IDToOrder[_orderID].expirationDate > block.timestamp, "Order has expired");
-        require(GetPriceFeedDataV8.getPrice(IDToOrder[_orderID].targetTokenAddress) >= IDToOrder[_orderID].SellPrice, "Price is too low");
+        require(IDToOrder[_orderID].targetTokenAddress.getPrice() >= IDToOrder[_orderID].SellPrice, "Price is too low");
 
         require(IERC20(IDToOrder[_orderID].targetTokenAddress).transferFrom(msg.sender, address(this), IDToOrder[_orderID].amount), "Transfer failed");
         //IDToOrder[_orderID].active = false;
-
-        bool swapSuccessful = trySwap(_orderID, IDToOrder[_orderID].amount, IDToOrder[_orderID].SellPrice);
+        //double check dicmal place
+        bool swapSuccessful = trySwap(_orderID, IDToOrder[_orderID].amount, IDToOrder[_orderID].SellPrice, tokenToPriceFeed[IDToOrder[_orderID].targetTokenAddress].decimals);
         if (!swapSuccessful) {
             revert("All DEX swaps failed");
             // Optionally, handle the case where all swaps fail (e.g., refunding the user).
         }
-
     }
-    
 
-    function trySwap(uint _orderID, uint _amount, uint _price) internal returns (bool) {
+
+    function trySwap(uint _orderID, uint _amount, uint _price, uint8 _priceDecimals) internal returns (bool) {
         bool swapSuccessful = false;
         for (uint i = 0; i < V2DexRouters.length && !swapSuccessful; i++) {
             IUniswapV2Router02 uniswapRouter = IUniswapV2Router02(V2DexRouters[i]);
             address[] memory path = getPathForTokenToToken(IDToOrder[_orderID].originTokenAddress, IDToOrder[_orderID].targetTokenAddress);
 
             try uniswapRouter.getAmountsOut(_amount, path) returns (uint256[] memory amountsOut) {
-                //is this right? and universal for both buy and sell? this might not be right
-                uint256 expectedAmountOut = amountsOut[1] * (100 - IDToOrder[_orderID].slippage) / 100;
-                if (_amount * _price >= expectedAmountOut) {
+                //is this right? and universal for both buy and sell?
+                uint256 expectedAmountOut = (amountsOut[1] * (100 - IDToOrder[_orderID].slippage)) / 100;
+                uint256 amountTimesPrice = _amount * _price / (10 ** _priceDecimals); // Normalize price to token decimals
+                if (amountTimesPrice >= expectedAmountOut) {
                     try uniswapRouter.swapExactTokensForTokens(
                         _amount,
                         expectedAmountOut,
@@ -167,10 +168,7 @@ contract Dobo is Ownable {
         }
         return swapSuccessful;
     }
-
-        //iterate over the buy and sell orders and check the price of the token arrays to see if the order needs to be placed
-
-    
+    //iterate over the buy and sell orders and check the price of the token arrays to see if the order needs to be placed
 
     //Thinking in terms of automation -- possibly using chainlink, possibly offchain, thinking scalablity.
 
@@ -182,6 +180,4 @@ contract Dobo is Ownable {
         path[1] = _token2;
         return path;
     }
-
-
 }
