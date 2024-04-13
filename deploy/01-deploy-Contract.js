@@ -12,7 +12,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     log("----------------------------------------------------")
 
     approvedDexRouters = [ 
-        "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45", //uniswapV2Router ETH
+        "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", //uniswapV2Router ETH
         "0xEfF92A263d31888d860bD50809A8D171709b7b1c", //PancakeSwapV2Router ETH
         "0x6b3595068778dd592e39a122f4f5a5cf09c90fe2", //SushiSwapRouter ETH?
     ]
