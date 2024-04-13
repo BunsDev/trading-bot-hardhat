@@ -40,39 +40,28 @@ const { developmentChains } = require("../../helper-hardhat-config")
             });
             const UNISWAP_ROUTER_ADDRESS = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
             const WETH_ABI = [
-            // Some details about the WETH contract
             "function deposit() external payable",
             "function approve(address spender, uint256 amount) external returns (bool)"
             ];
             const amountIn = ethers.parseUnits("1", 18); // 1 WETH
             const weth = new ethers.Contract(WETH, WETH_ABI, ethers.provider).connect(deployer);
             await weth.deposit({ value: BigInt(1e18.toString()) })
-            const tx2 = await weth.approve(UNISWAP_ROUTER_ADDRESS, amountIn);
-            const receipt2 = await tx2.wait();
+            await weth.approve(UNISWAP_ROUTER_ADDRESS, amountIn);
             const UNISWAP_ROUTER_ABI = [
             "function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)"
             ];
             const DAI_ADDRESS = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
-            // Connect to the Uniswap Router contract
             uniswapRouter = new ethers.Contract(UNISWAP_ROUTER_ADDRESS, UNISWAP_ROUTER_ABI, ethers.provider).connect(deployer);
-            // Define the path of the swap
             const path = [WETH, DAI_ADDRESS];
-            // Define the amount of WETH you want to swap
-            // Define the minimum amount of DAI you want to receive
             const amountOutMin = ethers.parseUnits("200", 18); // At least 200 DAI
-            // Define the deadline of the swap
             const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
-            // Execute the swap
-            const tx = await uniswapRouter.swapExactTokensForTokens(
+            await uniswapRouter.swapExactTokensForTokens(
             amountIn,
             amountOutMin,
             path,
             deployer.address,
             deadline
             );
-
-            // Wait for the transaction to be mined
-            const receipt = await tx.wait();
             await deployments.fixture(["all"])
             DoboContract = await ethers.getContract("Dobo")
             DoboContractOwner = DoboContract.connect(deployer)
@@ -99,14 +88,24 @@ const { developmentChains } = require("../../helper-hardhat-config")
                 const dai = new ethers.Contract(DAI, DAI_ABI, ethers.provider).connect(deployer);
                 const amount = ethers.parseUnits("10", 18); // 10 DAI
                 const balance = await dai.balanceOf(deployer.address);
-                console.log("Balance: ", balance.toString());
                 const tx = await dai.approve(DoboContract.target, balance);
-                await tx.wait();
-                const allowance = await dai.allowance(deployer.address, DoboContract.target);
-        
-                //console.log("Order: ", order);
-                //expect it to not revert
-                await expect(DoboContractOwner.placeOrder(DAI, AAVE, 1, 12595122896, 100 * 1e8, 5, block.timestamp + 31536000)).to.not.be.reverted;
+                await expect(DoboContractOwner.placeOrder(DAI, AAVE, amount, 12595122896, 100 * 1e8, 5, block.timestamp + 31536000)).to.not.be.reverted;
+            });
+            it("should be able to buy the order for AAVE tokens", async function () {
+                const DAI_ABI = [
+                    "function approve(address spender, uint256 amount) external returns (bool)",
+                    "function balanceOf(address account) external view returns (uint256)",
+                    "function allowance(address owner, address spender) external view returns (uint256)"
+                ];
+                const dai = new ethers.Contract(DAI, DAI_ABI, ethers.provider).connect(deployer);
+                const amount = ethers.parseUnits("10", 18); // 10 DAI
+                const balance = await dai.balanceOf(deployer.address);
+                const tx = await dai.approve(DoboContract.target, balance);
+                const purchasePrice = 100 * 1e8;
+                await DoboContractOwner.placeOrder(DAI, AAVE, amount, 12595122896, purchasePrice, 5, block.timestamp + 31536000)
+                await DoboContractOwner.purchaseOrder(1)
+                const balanceAfter = await dai.balanceOf(deployer.address);
+                expect(Number(balanceAfter)).to.be.below(Number(balance));
             });
         });
     }); 3528795437475780548878
