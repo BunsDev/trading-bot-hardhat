@@ -157,11 +157,6 @@ contract Dobo is Ownable {
     function executeOrder() public {
         //iterate over the buy and sell orders and check the price of the token arrays to see if the order needs to be placed
     }    
-    function slippageCalculator(uint256 _amount, uint256 _slippage) internal pure returns (uint256) {
-        return (_amount * (100 - _slippage)) / 100;
-    }
-
-
 
     function trySwap(uint _orderID, uint _amount, uint _price, uint8 _priceDecimals, bool _isSell) internal returns (bool) {
         bool swapSuccessful = false;
