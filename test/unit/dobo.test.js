@@ -24,6 +24,13 @@ const { developmentChains } = require("../../helper-hardhat-config")
         let FIL = "0x211ef1ea610460db2ec6094717b524e86490c37d";
         // let WLD = "0x4ea666c057e278e1f563e438cdb4cfef3048e517";
 
+        WETH_ABI = [
+            "function deposit() external payable",
+            "function approve(address spender, uint256 amount) external returns (bool)",
+            "function balanceOf(address account) external view returns (uint256)",
+            "function allowance(address owner, address spender) external view returns (uint256)"
+            ];
+
         let block;
 
         beforeEach(async () => {
@@ -39,12 +46,6 @@ const { developmentChains } = require("../../helper-hardhat-config")
                 ],
             });
             const UNISWAP_ROUTER_ADDRESS = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
-            const WETH_ABI = [
-            "function deposit() external payable",
-            "function approve(address spender, uint256 amount) external returns (bool)",
-            "function balanceOf(address account) external view returns (uint256)",
-            "function allowance(address owner, address spender) external view returns (uint256)"
-            ];
             const amountIn = ethers.parseUnits("1", 18); // 1 WETH
             const weth = new ethers.Contract(WETH, WETH_ABI, ethers.provider).connect(deployer);
             await weth.deposit({ value: BigInt(1e20.toString()) })
@@ -211,8 +212,8 @@ const { developmentChains } = require("../../helper-hardhat-config")
                 await DoboContractOwner.sellOrder(1)
                 const balanceAfterSell = await usdc.balanceOf(deployer.address);
                 console.log("Balance of usdc before purchase", balance.toString());
-                console.log("Balance of usdc after purchase", ((Number(balance) - Number(balanceAfterPurchase))/1e18).toString());
-                console.log("Balance of usdc after sell: ", ((Number(balance) - Number(balanceAfterSell)) / 1e18).toString());
+                console.log("Balance of usdc after purchase", ((Number(balance) - Number(balanceAfterPurchase))/1e6).toString());
+                console.log("Balance of usdc after sell: ", ((Number(balance) - Number(balanceAfterSell)) / 1e6).toString());
                 //expect(Number(balanceAfterSell)).to.be.above(Number(balanceAfter));*/
             });
             
